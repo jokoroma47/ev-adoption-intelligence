@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Electric Revolution — EV Adoption & Market Intelligence | Data Analytics Portfolio</title>
+<meta name="description" content="Interactive EV analytics dashboard — 194,223 Washington State electric vehicle registrations, 42 manufacturers, 1997–2025. Built with HTML5 and Chart.js.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root{
+    --bg:#0D1117;--surface:#161B22;--surface2:#21262D;
+    --border:#30363D;--border2:#388BFD;
+    --text:#E6EDF3;--text2:#8B949E;--text3:#7D8590;
+    --green:#238636;--green2:#2EA043;--green3:#3FB950;
+    --blue:#1F6FEB;--blue2:#388BFD;--blue3:#79C0FF;
+    --amber:#D29922;--amber2:#E3B341;
+    --red:#DA3633;--red2:#F78166;
+    --purple:#8957E5;--purple2:#D2A8FF;
+    --radius:12px;--radius-sm:8px;
+    --transition:all 0.2s cubic-bezier(0.4,0,0.2,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.5;overflow-x:hidden}
+
+  /* ── Scroll reveal ── */
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .5s ease,transform .5s ease}
+  .reveal.visible{opacity:1;transform:translateY(0)}
+
+  /* ── Header ── */
+  .header{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;box-shadow:0 1px 12px rgba(0,0,0,0.4)}
+  .header-inner{max-width:1400px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .header-brand{display:flex;align-items:center;gap:14px}
+  .header-icon{width:44px;height:44px;background:var(--green);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;transition:var(--transition)}
+  .header-icon:hover{transform:scale(1.08);background:var(--green2)}
+  .header-title{color:var(--text);font-size:17px;font-weight:600;letter-spacing:-0.02em}
+  .header-sub{color:var(--text3);font-size:11px;margin-top:2px}
+  .header-pills{display:flex;gap:6px;flex-wrap:wrap}
+  .pill{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 14px;text-align:center;transition:var(--transition);cursor:default}
+  .pill:hover{border-color:var(--green);transform:translateY(-1px)}
+  .pill-val{color:var(--green3);font-size:14px;font-weight:600}
+  .pill-lbl{color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:0.06em;margin-top:1px}
+
+  /* ── Nav ── */
+  .nav-bar{background:var(--bg);border-bottom:1px solid var(--border)}
+  .nav-inner{max-width:1400px;margin:0 auto;padding:8px 24px;display:flex;align-items:center;gap:4px;overflow-x:auto}
+  .nav-btn{padding:8px 18px;background:transparent;border:none;border-radius:var(--radius-sm);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:var(--transition);position:relative}
+  .nav-btn::after{content:'';position:absolute;bottom:-1px;left:50%;right:50%;height:2px;background:var(--green);transition:var(--transition)}
+  .nav-btn:hover{color:var(--text);background:var(--surface)}
+  .nav-btn:hover::after{left:10%;right:10%}
+  .nav-btn.active{color:var(--green3);background:var(--surface)}
+  .nav-btn.active::after{left:10%;right:10%}
+
+  /* ── Main ── */
+  .main{max-width:1400px;margin:0 auto;padding:20px 24px}
+  .page{display:none;animation:fadeIn .3s ease}.page.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ── Grids ── */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+  @media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+  @media(max-width:1100px){.grid3{grid-template-columns:1fr 1fr}}
+  .full{grid-column:1/-1}.mb14{margin-bottom:14px}
+
+  /* ── KPI cards ── */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+  .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;position:relative;overflow:hidden;transition:var(--transition);cursor:default}
+  .kpi:hover{border-color:var(--green);transform:translateY(-3px);box-shadow:0 6px 20px rgba(35,134,54,0.15)}
+  .kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;border-radius:0 0 var(--radius) var(--radius);transition:var(--transition)}
+  .kpi:hover::after{height:3px}
+  .kpi.g::after{background:var(--green)}.kpi.b::after{background:var(--blue)}.kpi.a::after{background:var(--amber)}.kpi.r::after{background:var(--red)}.kpi.p::after{background:var(--purple)}
+  .kpi-val{font-size:22px;font-weight:700;color:var(--text);line-height:1.1;margin-top:4px}
+  .kpi-lbl{font-size:10px;color:var(--text3);margin-top:5px;text-transform:uppercase;letter-spacing:0.04em}
+
+  /* ── Cards ── */
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:var(--transition)}
+  .card:hover{border-color:var(--border2);box-shadow:0 4px 16px rgba(56,139,253,0.08)}
+  .card-title{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+  .card-title::before{content:'';width:3px;height:12px;border-radius:2px;background:var(--green);display:inline-block;flex-shrink:0}
+
+  /* ── Charts ── */
+  .cw{position:relative;width:100%}
+  .h160{height:160px}.h180{height:180px}.h200{height:200px}.h220{height:220px}.h260{height:260px}.h300{height:300px}.h340{height:340px}
+
+  /* ── Alert/insight boxes ── */
+  .ins{background:var(--bg);border-radius:var(--radius-sm);padding:10px 13px;font-size:12px;margin-bottom:12px;line-height:1.7;border-left:3px solid;transition:var(--transition)}
+  .ins:hover{transform:translateX(3px)}
+  .ins.g{border-color:var(--green);color:var(--green3)}
+  .ins.b{border-color:var(--blue);color:var(--blue3)}
+  .ins.a{border-color:var(--amber);color:var(--amber2)}
+  .ins.r{border-color:var(--red);color:var(--red2)}
+
+  /* ── Legend ── */
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+  .legend span{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);transition:var(--transition);cursor:default}
+  .legend span:hover{color:var(--text)}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block;flex-shrink:0}
+
+  /* ── Horizontal bars ── */
+  .hbar-list{overflow-y:auto}
+  .hbar-row{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:var(--radius-sm);transition:var(--transition);cursor:default}
+  .hbar-row:hover{background:var(--surface2)}
+  .hbar-lbl{flex:0 0 130px;font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hbar-track{flex:1;height:10px;background:var(--surface2);border-radius:5px;overflow:hidden}
+  .hbar-fill{height:100%;border-radius:5px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+  .hbar-val{flex:0 0 52px;text-align:right;font-size:11px;font-weight:600;color:var(--text)}
+
+  /* ── Footer ── */
+  .footer{background:var(--surface);border-top:1px solid var(--border);color:var(--text3);text-align:center;padding:24px;font-size:11px;margin-top:40px}
+  .footer a{color:var(--text2);text-decoration:none;transition:var(--transition)}
+  .footer a:hover{color:var(--green3)}
+
+  ::-webkit-scrollbar{width:4px;height:4px}
+  ::-webkit-scrollbar-track{background:var(--surface)}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="header-icon">⚡</div>
+      <div>
+        <div class="header-title">The Electric Revolution — EV Adoption &amp; Market Intelligence</div>
+        <div class="header-sub">Washington State DOL &nbsp;·&nbsp; 194,223 EVs &nbsp;·&nbsp; 42 manufacturers &nbsp;·&nbsp; 1997–2025</div>
+      </div>
+    </div>
+    <div class="header-pills">
+      <div class="pill"><div class="pill-val">194,223</div><div class="pill-lbl">Total EVs</div></div>
+      <div class="pill"><div class="pill-val">43.9%</div><div class="pill-lbl">Tesla Share</div></div>
+      <div class="pill"><div class="pill-val">78.4%</div><div class="pill-lbl">BEV Rate</div></div>
+      <div class="pill"><div class="pill-val">59,664</div><div class="pill-lbl">Peak 2023</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav-bar">
+  <div class="nav-inner">
+    <button class="nav-btn active" onclick="showPage('p1',this)">Overview</button>
+    <button class="nav-btn" onclick="showPage('p2',this)">Market Intelligence</button>
+    <button class="nav-btn" onclick="showPage('p3',this)">Geography</button>
+    <button class="nav-btn" onclick="showPage('p4',this)">Vehicle Technology</button>
+    <button class="nav-btn" onclick="showPage('p5',this)">Growth Trends</button>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- PAGE 1 -->
+<div class="page active" id="p1">
+  <div class="kpi-grid reveal">
+    <div class="kpi g"><div class="kpi-val">194,223</div><div class="kpi-lbl">Total EVs registered</div></div>
+    <div class="kpi b"><div class="kpi-val">152,174</div><div class="kpi-lbl">Battery EVs (BEV)</div></div>
+    <div class="kpi a"><div class="kpi-val">42,049</div><div class="kpi-lbl">Plug-in Hybrids (PHEV)</div></div>
+    <div class="kpi g"><div class="kpi-val">42</div><div class="kpi-lbl">Manufacturers</div></div>
+    <div class="kpi a"><div class="kpi-val">59,664</div><div class="kpi-lbl">Peak year — 2023</div></div>
+    <div class="kpi b"><div class="kpi-val">196.7 mi</div><div class="kpi-lbl">Avg BEV range</div></div>
+    <div class="kpi p"><div class="kpi-val">337 mi</div><div class="kpi-lbl">Max range (Tesla S)</div></div>
+    <div class="kpi r"><div class="kpi-val">43.9%</div><div class="kpi-lbl">Tesla market share</div></div>
+  </div>
+  <div class="ins g reveal">2023 saw 59,664 new EV registrations — more than the entire period from 1997 to 2020 combined (50,295 vehicles). The electric revolution accelerated 5.8x in under a decade. Non-Tesla manufacturers first exceeded Tesla in 2022, signalling a maturing, competitive market.</div>
+  <div class="grid2 reveal">
+    <div class="card">
+      <div class="card-title">BEV vs PHEV split</div>
+      <div class="legend"><span><i style="background:#238636"></i>BEV — 152,174 (78.4%)</span><span><i style="background:#1F6FEB"></i>PHEV — 42,049 (21.6%)</span></div>
+      <div class="cw h200"><canvas id="c1a"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">EV adoption by era</div>
+      <div class="legend"><span><i style="background:#238636"></i>Surge 2023+</span><span><i style="background:#1F6FEB"></i>Mainstream 2020-22</span><span><i style="background:#D29922"></i>Growth 2015-19</span><span><i style="background:#8957E5"></i>Early Pre-2015</span></div>
+      <div class="cw h200"><canvas id="c1b"></canvas></div>
+    </div>
+  </div>
+  <div class="grid2 reveal">
+    <div class="card">
+      <div class="card-title">Top 8 manufacturers — total registrations</div>
+      <div class="cw h220"><canvas id="c1c"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">CAFV eligibility breakdown</div>
+      <div class="ins a">53.9% of EVs have unknown CAFV eligibility — battery range not yet researched by WA State. This is a regulatory backlog, not missing data.</div>
+      <div class="cw h160"><canvas id="c1d"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page" id="p2">
+  <div class="kpi-grid reveal">
+    <div class="kpi r"><div class="kpi-val">43.9%</div><div class="kpi-lbl">Tesla market share</div></div>
+    <div class="kpi b"><div class="kpi-val">58.8%</div><div class="kpi-lbl">Top 3 makes combined</div></div>
+    <div class="kpi g"><div class="kpi-val">MODEL Y</div><div class="kpi-lbl">Top model — 40,167 units</div></div>
+    <div class="kpi a"><div class="kpi-val">84.6%</div><div class="kpi-lbl">Top 10 makes combined</div></div>
+  </div>
+  <div class="ins r reveal">Tesla dominates at 43.9% — nearly 6x the nearest rival Chevrolet (7.5%). The Model Y alone represents 20.7% of all WA State EV registrations — 1 in every 5 EVs is a Tesla Model Y.</div>
+  <div class="grid2 reveal">
+    <div class="card">
+      <div class="card-title">Top 15 manufacturers by registration</div>
+      <div class="hbar-list" id="p2a"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top 10 models by registration</div>
+      <div class="hbar-list" id="p2b"></div>
+    </div>
+  </div>
+  <div class="card full reveal" style="margin-top:0">
+    <div class="card-title">BEV vs PHEV strategy by manufacturer — top 10 makes</div>
+    <div class="ins b">Jeep = 100% PHEV. Toyota = 90% PHEV. Tesla, Nissan &amp; VW = 100% BEV. BMW is 64% PHEV — a clear strategic divergence across the industry.</div>
+    <div class="cw h260"><canvas id="p2c"></canvas></div>
+  </div>
+</div>
+
+<!-- PAGE 3 -->
+<div class="page" id="p3">
+  <div class="kpi-grid reveal">
+    <div class="kpi r"><div class="kpi-val">51.5%</div><div class="kpi-lbl">King County share</div></div>
+    <div class="kpi b"><div class="kpi-val">Seattle</div><div class="kpi-lbl">Top city — 31,797 EVs</div></div>
+    <div class="kpi g"><div class="kpi-val">756</div><div class="kpi-lbl">Cities covered</div></div>
+    <div class="kpi a"><div class="kpi-val">99.8%</div><div class="kpi-lbl">Washington State share</div></div>
+  </div>
+  <div class="ins r reveal">King County alone holds 51.5% of all EV registrations — a concentration driven by Seattle's tech workforce, higher household incomes and dense charging infrastructure.</div>
+  <div class="grid2 reveal">
+    <div class="card">
+      <div class="card-title">Top 15 counties by EV registrations</div>
+      <div class="hbar-list" id="p3a"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top 15 cities by EV registrations</div>
+      <div class="hbar-list" id="p3b"></div>
+    </div>
+  </div>
+  <div class="card full reveal" style="margin-top:0">
+    <div class="card-title">BEV adoption rate by county (%) — top 10 counties</div>
+    <div class="ins b">Snohomish leads BEV rate at 82.6%. Rural Spokane trails at 68.4% — reflecting charging infrastructure gaps outside urban centres.</div>
+    <div class="cw h220"><canvas id="p3c"></canvas></div>
+  </div>
+</div>
+
+<!-- PAGE 4 -->
+<div class="page" id="p4">
+  <div class="kpi-grid reveal">
+    <div class="kpi g"><div class="kpi-val">196.7 mi</div><div class="kpi-lbl">Avg BEV range (reported)</div></div>
+    <div class="kpi a"><div class="kpi-val">30.9 mi</div><div class="kpi-lbl">Avg PHEV range (reported)</div></div>
+    <div class="kpi b"><div class="kpi-val">337 mi</div><div class="kpi-lbl">Max range — Tesla S</div></div>
+    <div class="kpi p"><div class="kpi-val">6.4x</div><div class="kpi-lbl">BEV vs PHEV range advantage</div></div>
+  </div>
+  <div class="ins a reveal">Data transparency: Electric Range = 0 on 104,634 records means unreported — NOT zero range. All correspond to "Eligibility Unknown" CAFV status. Only reported ranges are used in the analysis below.</div>
+  <div class="grid2 reveal">
+    <div class="card">
+      <div class="card-title">Electric range distribution — reported vehicles only</div>
+      <div class="cw h220"><canvas id="p4a"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Average range by manufacturer — top 10 (reported only)</div>
+      <div class="cw h220"><canvas id="p4b"></canvas></div>
+    </div>
+  </div>
+  <div class="card full reveal" style="margin-top:0">
+    <div class="card-title">Top 10 models by maximum electric range</div>
+    <div class="cw h260"><canvas id="p4c"></canvas></div>
+  </div>
+</div>
+
+<!-- PAGE 5 -->
+<div class="page" id="p5">
+  <div class="kpi-grid reveal">
+    <div class="kpi g"><div class="kpi-val">+112%</div><div class="kpi-lbl">YoY growth 2022→2023</div></div>
+    <div class="kpi b"><div class="kpi-val">2022</div><div class="kpi-lbl">Non-Tesla first overtook Tesla</div></div>
+    <div class="kpi a"><div class="kpi-val">87.4%</div><div class="kpi-lbl">BEV share in 2023</div></div>
+    <div class="kpi r"><div class="kpi-val">41.2%</div><div class="kpi-lbl">Surge era (2023+) share</div></div>
+  </div>
+  <div class="ins g reveal">The 2022→2023 surge produced 112% year-on-year growth — the largest single-year jump in the entire dataset. 2023 alone (59,664) exceeded the combined total of every year from 1997 to 2020 (50,295).</div>
+  <div class="card full mb14 reveal">
+    <div class="card-title">Annual EV registrations 2011–2024 — BEV vs PHEV stacked</div>
+    <div class="legend"><span><i style="background:#238636"></i>BEV</span><span><i style="background:#1F6FEB"></i>PHEV</span></div>
+    <div class="cw h260"><canvas id="p5a"></canvas></div>
+  </div>
+  <div class="grid2 reveal">
+    <div class="card">
+      <div class="card-title">Tesla vs non-Tesla registrations — 2016 to 2024</div>
+      <div class="legend"><span><i style="background:#DA3633"></i>Tesla</span><span><i style="background:#1F6FEB"></i>Non-Tesla</span></div>
+      <div class="cw h220"><canvas id="p5b"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">BEV market share % by year — growing dominance of pure electric</div>
+      <div class="ins b">BEV share dipped to 46–49% in 2012–2014 as PHEV options dominated. By 2023 it has rebounded to 87.4% — consumers are decisively choosing pure electric over hybrid.</div>
+      <div class="cw h180"><canvas id="p5c"></canvas></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="footer">
+  <p><strong style="color:#E6EDF3">The Electric Revolution — EV Adoption &amp; Market Intelligence</strong> &nbsp;·&nbsp; Data Analytics Portfolio Project</p>
+  <p style="margin-top:6px">Built with HTML5, CSS3 &amp; JavaScript &nbsp;·&nbsp; Tools: Power BI &bull; MySQL &bull; Python &nbsp;·&nbsp; Source: <a href="https://data.wa.gov" target="_blank">Washington State DOL Open Data</a> via Kaggle</p>
+</div>
+
+<script>
+const GC='rgba(255,255,255,0.04)',TX='#7D8590';
+Chart.defaults.font.family='-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif';
+Chart.defaults.font.size=11;Chart.defaults.color=TX;
+
+function mk(id,type,labels,datasets,opts){
+  const el=document.getElementById(id);if(!el)return;
+  return new Chart(el,{type,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},layout:{padding:4},...opts}});
+}
+
+/* P1 */
+mk('c1a','doughnut',['BEV','PHEV'],[{data:[152174,42049],backgroundColor:['#238636','#1F6FEB'],borderWidth:3,borderColor:'#161B22'}],{cutout:'68%',plugins:{legend:{display:true,position:'bottom',labels:{color:TX,font:{size:11},boxWidth:12,padding:14}}}});
+mk('c1b','doughnut',['Surge (2023+)','Mainstream (2020-22)','Growth (2015-19)','Early (<2015)'],[{data:[79986,59559,44359,10319],backgroundColor:['#238636','#1F6FEB','#D29922','#8957E5'],borderWidth:3,borderColor:'#161B22'}],{cutout:'60%',plugins:{legend:{display:true,position:'bottom',labels:{color:TX,font:{size:10},boxWidth:10,padding:10}}}});
+mk('c1c','bar',['Tesla','Chevrolet','Nissan','Ford','Kia','BMW','Toyota','VW'],[{data:[85315,14577,14360,10265,8497,8149,7372,5483],backgroundColor:['#DA3633','#1F6FEB','#1F6FEB','#1F6FEB','#1F6FEB','#1F6FEB','#1F6FEB','#1F6FEB'],borderRadius:4}],{scales:{x:{ticks:{color:TX},grid:{display:false}},y:{ticks:{color:TX},grid:{color:GC}}}});
+mk('c1d','doughnut',['CAFV Eligible','Eligibility Unknown','Not Eligible'],[{data:[68811,104634,20778],backgroundColor:['#238636','#D29922','#DA3633'],borderWidth:3,borderColor:'#161B22'}],{cutout:'55%',plugins:{legend:{display:true,position:'bottom',labels:{color:TX,font:{size:10},boxWidth:10,padding:10}}}});
+
+/* P2 */
+const makes=[{n:'TESLA',c:85315},{n:'CHEVROLET',c:14577},{n:'NISSAN',c:14360},{n:'FORD',c:10265},{n:'KIA',c:8497},{n:'BMW',c:8149},{n:'TOYOTA',c:7372},{n:'VOLKSWAGEN',c:5483},{n:'JEEP',c:5141},{n:'HYUNDAI',c:5115},{n:'RIVIAN',c:4912},{n:'VOLVO',c:4565},{n:'AUDI',c:3987},{n:'CHRYSLER',c:3484},{n:'MERCEDES-BENZ',c:1833}];
+document.getElementById('p2a').innerHTML=makes.map(m=>`<div class="hbar-row"><div class="hbar-lbl">${m.n}</div><div class="hbar-track"><div class="hbar-fill" style="width:0%;background:${m.n==='TESLA'?'#DA3633':'#1F6FEB'}" data-w="${(m.c/85315*100).toFixed(1)}"></div></div><div class="hbar-val">${(m.c/1000).toFixed(1)}K</div></div>`).join('');
+
+const models=[{n:'Tesla Model Y',c:40167,t:1},{n:'Tesla Model 3',c:30943,t:1},{n:'Nissan LEAF',c:13501,t:0},{n:'Tesla Model S',c:7821,t:1},{n:'Chevrolet Bolt EV',c:6538,t:0},{n:'Tesla Model X',c:6110,t:1},{n:'Chevrolet Volt',c:4832,t:0},{n:'VW ID.4',c:4406,t:0},{n:'Ford Mustang Mach-E',c:3857,t:0},{n:'Jeep Wrangler',c:3844,t:0}];
+document.getElementById('p2b').innerHTML=models.map(m=>`<div class="hbar-row"><div class="hbar-lbl">${m.n}</div><div class="hbar-track"><div class="hbar-fill" style="width:0%;background:${m.t?'#DA3633':'#238636'}" data-w="${(m.c/40167*100).toFixed(1)}"></div></div><div class="hbar-val">${(m.c/1000).toFixed(1)}K</div></div>`).join('');
+
+mk('p2c','bar',['Tesla','Chevrolet','Nissan','Ford','Kia','BMW','Toyota','VW','Jeep','Hyundai'],[
+  {label:'BEV',data:[85315,9745,14360,6539,5869,2969,708,5483,0,4433],backgroundColor:'#238636',borderRadius:3},
+  {label:'PHEV',data:[0,4832,0,3726,2628,5180,6664,0,5141,682],backgroundColor:'#1F6FEB',borderRadius:3}
+],{scales:{x:{ticks:{color:TX},grid:{display:false}},y:{ticks:{color:TX},grid:{color:GC}}}});
+
+/* P3 */
+const counties=[{n:'King',c:100061},{n:'Snohomish',c:23117},{n:'Pierce',c:15257},{n:'Clark',c:11517},{n:'Thurston',c:7076},{n:'Kitsap',c:6488},{n:'Spokane',c:5103},{n:'Whatcom',c:4688},{n:'Benton',c:2372},{n:'Skagit',c:2115},{n:'Island',c:2066},{n:'Chelan',c:1178},{n:'Yakima',c:1155},{n:'Clallam',c:1151},{n:'Jefferson',c:1071}];
+document.getElementById('p3a').innerHTML=counties.map(c=>`<div class="hbar-row"><div class="hbar-lbl">${c.n}</div><div class="hbar-track"><div class="hbar-fill" style="width:0%;background:#238636" data-w="${(c.c/100061*100).toFixed(1)}"></div></div><div class="hbar-val">${(c.c/1000).toFixed(0)}K</div></div>`).join('');
+
+const cities=[{n:'Seattle',c:31797},{n:'Bellevue',c:9687},{n:'Redmond',c:6947},{n:'Vancouver',c:6862},{n:'Bothell',c:6392},{n:'Kirkland',c:5778},{n:'Renton',c:5646},{n:'Sammamish',c:5640},{n:'Olympia',c:4676},{n:'Tacoma',c:4078},{n:'Bellingham',c:3233},{n:'Kent',c:3115},{n:'Tukwila',c:3076},{n:'Spokane',c:2998},{n:'Lynnwood',c:2983}];
+document.getElementById('p3b').innerHTML=cities.map(c=>`<div class="hbar-row"><div class="hbar-lbl">${c.n}</div><div class="hbar-track"><div class="hbar-fill" style="width:0%;background:#1F6FEB" data-w="${(c.c/31797*100).toFixed(1)}"></div></div><div class="hbar-val">${(c.c/1000).toFixed(1)}K</div></div>`).join('');
+
+mk('p3c','bar',['King','Snohomish','Pierce','Clark','Thurston','Kitsap','Spokane','Whatcom','Benton','Skagit'],
+  [{data:[80.7,82.6,76.6,74.0,75.1,74.4,68.4,74.3,69.7,74.4],backgroundColor:['#238636','#2EA043','#238636','#238636','#238636','#238636','#D29922','#238636','#D29922','#238636'],borderRadius:4}],
+  {scales:{x:{ticks:{color:TX,maxRotation:30},grid:{display:false}},y:{min:60,ticks:{callback:v=>v+'%',color:TX},grid:{color:GC}}}}
+);
+
+/* P4 */
+mk('p4a','bar',['0-50 mi','51-100','101-150','151-200','201-250','251-300','300+'],
+  [{data:[38210,13306,3858,2795,21803,6977,2638],backgroundColor:['#DA3633','#D29922','#D29922','#238636','#238636','#238636','#2EA043'],borderRadius:4}],
+  {scales:{x:{ticks:{color:TX},grid:{display:false}},y:{ticks:{color:TX},grid:{color:GC}}}}
+);
+mk('p4b','bar',['Tesla','Jaguar','Polestar','Chevrolet','VW','Nissan','Hyundai','Fiat','Ford','BMW'],
+  [{data:[240.8,234.0,233.0,141.0,107.5,104.6,92.3,85.6,83.5,66.2],backgroundColor:['#DA3633','#238636','#238636','#1F6FEB','#1F6FEB','#1F6FEB','#1F6FEB','#1F6FEB','#1F6FEB','#D29922'],borderRadius:4}],
+  {indexAxis:'y',scales:{x:{ticks:{callback:v=>v+' mi',color:TX},grid:{color:GC}},y:{ticks:{color:TX},grid:{display:false}}}}
+);
+mk('p4c','bar',['Model Y','Bolt EV','Model X','Model S','Model 3','Roadster','Kia Niro','I-PACE','Polestar PS2','LEAF'],
+  [{data:[291,259,293,337,322,245,239,234,233,215],backgroundColor:['#DA3633','#1F6FEB','#DA3633','#DA3633','#DA3633','#DA3633','#238636','#238636','#238636','#1F6FEB'],borderRadius:4}],
+  {scales:{x:{ticks:{color:TX},grid:{display:false}},y:{min:180,ticks:{callback:v=>v+' mi',color:TX},grid:{color:GC}}}}
+);
+
+/* P5 */
+const YRS=['2011','2012','2013','2014','2015','2016','2017','2018','2019','2020','2021','2022','2023','2024'];
+mk('p5a','bar',YRS,[
+  {label:'BEV',data:[662,739,2806,1746,3489,3785,4587,10075,8874,10255,15394,23729,52164,13793],backgroundColor:'#238636',borderRadius:3,stack:'s'},
+  {label:'PHEV',data:[68,855,1590,1792,1308,1762,4074,4375,2030,1834,3922,4425,7500,6481],backgroundColor:'#1F6FEB',borderRadius:3,stack:'s'}
+],{scales:{x:{ticks:{color:TX,autoSkip:false,maxRotation:45,font:{size:10}},grid:{display:false}},y:{ticks:{color:TX},grid:{color:GC}}}});
+
+mk('p5b','bar',['2016','2017','2018','2019','2020','2021','2022','2023','2024'],[
+  {label:'Tesla',data:[1619,1672,8024,4620,7075,11167,13767,28224,6584],backgroundColor:'#DA3633',borderRadius:3},
+  {label:'Non-Tesla',data:[3928,6989,6426,6284,5014,8149,14387,31440,13690],backgroundColor:'#1F6FEB',borderRadius:3}
+],{scales:{x:{ticks:{color:TX},grid:{display:false}},y:{ticks:{color:TX},grid:{color:GC}}}});
+
+mk('p5c','line',YRS,[{data:[90.7,46.4,63.8,49.3,72.7,68.2,53.0,69.7,81.4,84.8,79.7,84.3,87.4,68.0],borderColor:'#238636',backgroundColor:'rgba(35,134,54,0.08)',fill:true,tension:.35,pointBackgroundColor:'#238636',pointRadius:4,borderWidth:2}],{scales:{x:{ticks:{color:TX,autoSkip:false,maxRotation:45,font:{size:10}},grid:{display:false}},y:{min:40,ticks:{callback:v=>v+'%',color:TX},grid:{color:GC}}}});
+
+/* ── Interactions ── */
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  setTimeout(()=>document.querySelectorAll('#'+id+' .reveal').forEach(el=>el.classList.add('visible')),50);
+  setTimeout(animateBars,200);
+}
+
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});
+},{threshold:0.1});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
+function animateBars(){
+  document.querySelectorAll('.hbar-fill[data-w]').forEach(b=>{
+    setTimeout(()=>b.style.width=b.getAttribute('data-w')+'%',80);
+  });
+}
+setTimeout(()=>{
+  document.querySelectorAll('#p1 .reveal').forEach(el=>el.classList.add('visible'));
+  setTimeout(animateBars,300);
+},100);
+</script>
+</body>
+</html>
