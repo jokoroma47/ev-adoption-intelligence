@@ -73,7 +73,7 @@ to 2024.
 
 ## Tools Used
 
-Power BI · MySQL · Python · HTML · CSS · JavaScript
+Power BI · MySQL
 
 ---
 
